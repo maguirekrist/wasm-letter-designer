@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>dotnet-WorkerService1-AADA7205-B288-4F44-A9A2-046DA287C6B5</UserSecretsId>
+        <RootNamespace>WorkerService1</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="HarfBuzzSharp" Version="8.3.0.1" />
+        <PackageReference Include="HarfBuzzSharp.NativeAssets.macOS" Version="8.3.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1"/>
+        <PackageReference Include="SkiaSharp" Version="3.116.1" />
+        <PackageReference Include="SkiaSharp.HarfBuzz" Version="3.116.1" />
+        <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="3.116.1" />
+        <PackageReference Include="Topten.RichTextKit" Version="0.4.167" />
+    </ItemGroup>
+</Project>

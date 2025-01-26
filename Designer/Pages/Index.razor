@@ -1,0 +1,47 @@
+﻿@page "/"
+
+<PageTitle>Index</PageTitle>
+
+<h1>Clean Blazor</h1>
+<div @ref="CanvasContainer">
+    <SKCanvasView
+        OnPaintSurface="OnPaintSurface"
+        EnableRenderLoop="true"
+        tabindex="0"
+        @ref="CanvasView"
+        @onmousedown="OnMouseDown"
+        @onmouseup="OnMouseUp"
+        @onmousemove="OnMouseMove"
+        @onmousewheel="OnMouseWheel"
+        @onkeydown="HandleKeyDown"
+        style="width: 612px; height: 792px; border: 1px solid black;"
+    />
+</div>
+
+<button @onclick="GetDocumentText">Get Text</button>
+<button @onclick="ConvertToPdf">Convert To PDF</button>
+<button @onclick="ChangeStyle">Red Style</button>
+
+<script>
+    function getBoundingClientRect(element) {
+        if (!element) {
+            return null;
+        }
+        const rect = element.getBoundingClientRect();
+        return {
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            width: rect.width,
+            height: rect.height
+        };
+    }
+
+    function downloadFile(fileName, base64Content) {
+        const link = document.createElement("a");
+        link.href = `data:application/pdf;base64,${base64Content}`;
+        link.download = fileName;
+        link.click();
+    }
+</script>

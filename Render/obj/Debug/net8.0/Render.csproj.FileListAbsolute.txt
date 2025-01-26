@@ -1,0 +1,12 @@
+/Users/mkrist/dev/WASMTest/Render/bin/Debug/net8.0/Render.deps.json
+/Users/mkrist/dev/WASMTest/Render/bin/Debug/net8.0/Render.dll
+/Users/mkrist/dev/WASMTest/Render/bin/Debug/net8.0/Render.pdb
+/Users/mkrist/dev/WASMTest/Render/obj/Debug/net8.0/Render.csproj.AssemblyReference.cache
+/Users/mkrist/dev/WASMTest/Render/obj/Debug/net8.0/Render.GeneratedMSBuildEditorConfig.editorconfig
+/Users/mkrist/dev/WASMTest/Render/obj/Debug/net8.0/Render.AssemblyInfoInputs.cache
+/Users/mkrist/dev/WASMTest/Render/obj/Debug/net8.0/Render.AssemblyInfo.cs
+/Users/mkrist/dev/WASMTest/Render/obj/Debug/net8.0/Render.csproj.CoreCompileInputs.cache
+/Users/mkrist/dev/WASMTest/Render/obj/Debug/net8.0/Render.dll
+/Users/mkrist/dev/WASMTest/Render/obj/Debug/net8.0/refint/Render.dll
+/Users/mkrist/dev/WASMTest/Render/obj/Debug/net8.0/Render.pdb
+/Users/mkrist/dev/WASMTest/Render/obj/Debug/net8.0/ref/Render.dll
