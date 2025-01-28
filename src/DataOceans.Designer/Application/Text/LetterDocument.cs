@@ -1,3 +1,5 @@
+using WASMApp.Application.Editor.Elements;
+
 namespace WASMApp.Application.Design;
 
 public class LetterDocument

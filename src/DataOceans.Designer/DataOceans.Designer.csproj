@@ -26,7 +26,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\RichTextKit\Topten.RichTextKit\Topten.RichTextKit.csproj" />
+      <ProjectReference Include="..\..\..\RichTextKit\Topten.RichTextKit\Topten.RichTextKit.csproj" />
+<!--      <ProjectReference Include="..\..\RichTextKit\Topten.RichTextKit\Topten.RichTextKit.csproj" />-->
     </ItemGroup>
 
 

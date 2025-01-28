@@ -11,6 +11,8 @@ using WASMApp.Application.Render;
 
 namespace WASMApp.Pages;
 
+
+
 public partial class Index
 {
     [Inject] private IJSRuntime JS { get; set; }
@@ -18,8 +20,13 @@ public partial class Index
     private ElementReference CanvasContainer;
     private SKCanvasView CanvasView;
     private DOMRect _canvasBounds;
-    private (int, int) _mousePosition;
+    private (float, float) _mousePosition;
     private bool _isMouseDown = false;
+
+    
+    [Inject] public InteractionManager _interactionManager { get; set; }
+
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -38,31 +45,35 @@ public partial class Index
 
     private void OnPaintSurface(SKPaintSurfaceEventArgs e)
     {
-        //Console.WriteLine("OnPaintSurface");
         var canvas = e.Surface.Canvas;
         canvas.Clear(SKColors.White);
        
+        canvas.Scale(1);
         DocumentRenderer.Render(canvas, _editor);
-        
-        // if (_caretRect != null)
-        // {
-        //     //Console.WriteLine("draw!");
-        //     canvas.DrawRect(_caretRect.Value, new SKPaint
-        //     {
-        //  a       Color = SKColors.Black
-        //     });
-        // }
     }
 
     private void OnMouseDown(MouseEventArgs e)
     {
         
         Console.WriteLine($"OnMouseDown x: {e.ClientX}, y: {e.ClientY}");
-        _editor.ActiveRegion = _editor.Document.Regions[0];
-        var newX = (int)(e.ClientX - _canvasBounds.Left);
-        var newY = (int)(e.ClientY - _canvasBounds.Top);
-        _editor.MoveCaret(newX, newY);
+        var newX = (float)(e.ClientX - _canvasBounds.Left);
+        var newY = (float)(e.ClientY - _canvasBounds.Top);
+        var clickPoint = new SKPoint(newX, newY);
         _isMouseDown = true;
+        
+        foreach (var region in _editor.Document.Regions)
+        {
+            if (region.Bounds.Contains(clickPoint))
+            {
+                Console.WriteLine($"Region hit: {region.Name}");
+                _editor.ActiveRegion = region;
+                _editor.MoveCaret(clickPoint.X, clickPoint.Y);
+                region.Focused = true;
+                return;
+            }
+        }
+        
+        HandleUnFocus();
     }
 
     private void OnMouseUp(MouseEventArgs e)
@@ -77,15 +88,28 @@ public partial class Index
         _isMouseDown = false;
     }
 
-    private void OnMouseMove(MouseEventArgs e)
+    private async Task OnMouseMove(MouseEventArgs e)
     {
+        var newX = (float)(e.ClientX - _canvasBounds.Left);
+        var newY = (float)(e.ClientY - _canvasBounds.Top);
+        
         if (_isMouseDown)
         {
-            var newX = (int)(e.ClientX - _canvasBounds.Left);
-            var newY = (int)(e.ClientY - _canvasBounds.Top);
             _mousePosition = (newX, newY);
             _editor.MoveSelectionEnd(newX, newY);   
         }
+
+        var mousePoint = new SKPoint(newX, newY);
+        foreach (var region in _editor.Document.Regions)
+        {
+            if (region.Bounds.Contains(mousePoint))
+            {
+                await _interactionManager.SetCursor(CursorStyle.Pointer);
+                return;
+            }
+        }
+
+        await _interactionManager.SetCursor(CursorStyle.Default);
     }
     
     private void OnMouseWheel(WheelEventArgs e)
@@ -162,5 +186,15 @@ public partial class Index
             FontSize = 12,
             TextColor = SKColors.Red
         };
+    }
+
+    private void HandleUnFocus()
+    {
+        if (_editor.ActiveRegion != null)
+        {
+            _editor.ActiveRegion.Focused = false;
+            _editor.ActiveRegion = null;   
+        }
+        _editor.Selection = new TextRange();
     }
 }

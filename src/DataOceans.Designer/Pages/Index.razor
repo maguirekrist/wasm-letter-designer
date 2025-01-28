@@ -37,6 +37,11 @@
             height: rect.height
         };
     }
+    
+    function changeCursor(cursorStyle)
+    {
+        document.body.style.cursor = cursorStyle;
+    }
 
     function downloadFile(fileName, base64Content) {
         const link = document.createElement("a");

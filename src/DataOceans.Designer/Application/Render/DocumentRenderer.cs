@@ -2,6 +2,7 @@ using SkiaSharp;
 using Topten.RichTextKit;
 using WASMApp.Application.Design;
 using WASMApp.Application.Editor;
+using WASMApp.Application.Editor.Elements;
 
 namespace WASMApp.Application.Render;
 
@@ -13,29 +14,18 @@ public class DocumentRenderer
         {
             RenderRegion(canvas, region, editor);
         }
-        
-        RenderCaret(canvas, editor.Caret);
+
+
+        if (editor.ActiveRegion != null)
+        {
+            RenderCaret(canvas, editor.Caret);   
+        }
     }
 
     private static void RenderRegion(SKCanvas canvas, Region region, EditorState editor)
     {
         //Draw Text
-        region.TextDocument.Paint(canvas, region.Position.Y, region.Position.Y + region.TextDocument.Length, new TextPaintOptions
-        {
-            Selection = editor.Selection,
-            SelectionColor = SKColors.CornflowerBlue.WithAlpha(126)
-        });
-        
-        //Draw Design
-        if (region.Border.HasValue)
-        {
-            canvas.DrawRect(region.Bounds, new SKPaint
-            {
-                IsStroke = true,
-                StrokeWidth = region.Border.Value.Width,
-                Color = region.Border.Value.Color
-            });
-        }
+        region.Draw(canvas, editor);
         
         if (editor.ActiveRegion == region)
         {
