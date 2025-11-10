@@ -6,7 +6,9 @@ using SkiaSharp.Views.Blazor;
 using Topten.RichTextKit;
 using Topten.RichTextKit.Editor;
 using WASMApp.Application.Editor;
+using WASMApp.Application.Editor.Core;
 using WASMApp.Application.Editor.DOM;
+using WASMApp.Application.Editor.Elements;
 using WASMApp.Application.Render;
 
 namespace WASMApp.Pages;
@@ -20,14 +22,12 @@ public partial class Index
     private ElementReference CanvasContainer;
     private SKCanvasView CanvasView;
     private DOMRect _canvasBounds;
+    private DragController? _dragController;
     private (float, float) _mousePosition;
     private bool _isMouseDown = false;
-
     
     [Inject] public InteractionManager _interactionManager { get; set; }
-
-
-
+    
     protected override async Task OnInitializedAsync()
     {
         _editor = new EditorState();
@@ -60,20 +60,43 @@ public partial class Index
         var newY = (float)(e.ClientY - _canvasBounds.Top);
         var clickPoint = new SKPoint(newX, newY);
         _isMouseDown = true;
-        
-        foreach (var region in _editor.Document.Regions)
+
+        var element = _editor.HitTest(clickPoint);
+
+        if (element is Region region)
         {
-            if (region.Bounds.Contains(clickPoint))
+            if (_editor.ActiveRegion != null)
             {
-                Console.WriteLine($"Region hit: {region.Name}");
-                _editor.ActiveRegion = region;
-                _editor.MoveCaret(clickPoint.X, clickPoint.Y);
-                region.Focused = true;
-                return;
+                _editor.ActiveRegion.Focused = false;
             }
+            
+            region.OnClick(clickPoint);
+            _editor.ActiveRegion = region;
+            _editor.MoveCaret(clickPoint.X, clickPoint.Y);
         }
-        
-        HandleUnFocus();
+
+        if (element is IDraggable draggable)
+        {
+            _dragController = new DragController(draggable, clickPoint);
+        }
+
+        if (element is null)
+        {
+            HandleUnFocus();
+        }
+    }
+
+    private void OnDoubleClick(MouseEventArgs args)
+    {
+        if (_editor.ActiveRegion is not null)
+        {
+            _interactionManager.SetInteractionMode(InteractionMode.TextFocus);
+        }
+        else
+        {
+            _interactionManager.SetInteractionMode(InteractionMode.Default);
+        }
+            
     }
 
     private void OnMouseUp(MouseEventArgs e)
@@ -84,7 +107,10 @@ public partial class Index
             var newY = (int)(e.ClientY - _canvasBounds.Top);
             _mousePosition = (newX, newY);
             _editor.MoveSelectionEnd(newX, newY);
+            _dragController?.StopDrag();
         }
+
+        _dragController = null;
         _isMouseDown = false;
     }
 
@@ -92,24 +118,26 @@ public partial class Index
     {
         var newX = (float)(e.ClientX - _canvasBounds.Left);
         var newY = (float)(e.ClientY - _canvasBounds.Top);
+        var mousePoint = new SKPoint(newX, newY);
         
         if (_isMouseDown)
         {
             _mousePosition = (newX, newY);
-            _editor.MoveSelectionEnd(newX, newY);   
+            _editor.MoveSelectionEnd(newX, newY);
+            _dragController?.UpdateDrag(mousePoint);
         }
 
-        var mousePoint = new SKPoint(newX, newY);
-        foreach (var region in _editor.Document.Regions)
+        var hoveredElement = _editor.HitTest(mousePoint);
+        
+        if (hoveredElement != null)
         {
-            if (region.Bounds.Contains(mousePoint))
-            {
-                await _interactionManager.SetCursor(CursorStyle.Pointer);
-                return;
-            }
+            //Console.WriteLine($"hovered: {hoveredElement.GetType().Name}");
+            await _interactionManager.SetCursor(hoveredElement.CursorStyle);
         }
-
-        await _interactionManager.SetCursor(CursorStyle.Default);
+        else
+        {
+            await _interactionManager.SetCursor(CursorStyle.Default);
+        }
     }
     
     private void OnMouseWheel(WheelEventArgs e)
@@ -194,6 +222,7 @@ public partial class Index
         {
             _editor.ActiveRegion.Focused = false;
             _editor.ActiveRegion = null;   
+            _interactionManager.SetInteractionMode(InteractionMode.Default);
         }
         _editor.Selection = new TextRange();
     }

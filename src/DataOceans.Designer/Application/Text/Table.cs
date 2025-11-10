@@ -1,4 +1,4 @@
-namespace WASMApp.Application.Design;
+namespace WASMApp.Application.Text;
 
 //TODO: Implement the Table Design
 public class Table

@@ -1,21 +1,27 @@
-using Microsoft.AspNetCore.Components.Web;
 using SkiaSharp;
 using Topten.RichTextKit;
 using Topten.RichTextKit.Editor;
 using WASMApp.Application.Design;
 using WASMApp.Application.Editor.Core;
+using WASMApp.Application.Render;
+using WASMApp.Application.Text;
 
 namespace WASMApp.Application.Editor.Elements;
 
-public class Region : InteractiveElement
+public class Region : InteractiveElement, IDraggable
 {
-    //public TextBlock TextBlock { get; set; }
-    public override IList<IInteractiveElement> Children { get; } = new List<IInteractiveElement>();
+    private CursorStyle _cursorStyle = CursorStyle.Pointer;
+
+    private SKPoint? _originPosition = null;
     
+    public override IList<IInteractiveElement> Children { get; } = new List<IInteractiveElement>();
+
+    public override CursorStyle CursorStyle => _cursorStyle;
+
     public TextDocument TextDocument { get; }
     public ITextDocumentView DocumentView { get; }
     public TextAlignment TextAlignment { get; set; } = TextAlignment.Left;
-    public SKPoint Position { get; private set; }
+    public SKPoint Position => new SKPoint(Bounds.Left, Bounds.Top);
 
     public int Width => (int)Bounds.Width;
     public int Height => (int)Bounds.Height;
@@ -30,18 +36,21 @@ public class Region : InteractiveElement
     public Region(string name)
     {
         Bounds = new SKRect(0, 0, 200, 200);
-        Position = new SKPoint(0, 0);
-        //TextBlock = new TextBlock();
         TextDocument = new TextDocument();
         DocumentView = new DocumentView();
-        TextDocument.PageWidth = this.Bounds.Width;
+        TextDocument.AddParagraph(new ListItem(StyleManager.Default.Value.DefaultStyle, BulletType.Circle));
+        TextDocument.AddParagraph(new ListItem(StyleManager.Default.Value.DefaultStyle, BulletType.Circle));
+        TextDocument.AddParagraph(new ListItem(StyleManager.Default.Value.DefaultStyle, BulletType.Circle));
         TextDocument.SetBounds(Bounds);
         TextDocument.RegisterView(DocumentView);
         Name = name;
-        // TextBlock.Alignment = TextAlignment;
-        // TextBlock.MaxWidth = Width;
-        // TextBlock.MaxHeight = Height;
         CreateDragHandles();
+    }
+    
+    public override void OnClick(SKPoint point)
+    {
+        Focused = true;
+        UpdateCursor(point);
     }
 
     private void CreateDragHandles()
@@ -54,18 +63,20 @@ public class Region : InteractiveElement
 
     public void UpdatePosition(float x, float y)
     {
-        Position = new SKPoint(x, y);
         Bounds = new SKRect(x, y, x + Width, y + Height);
-        TextDocument.SetBounds(Bounds);
-        foreach (var handles in Children.OfType<DragHandle>())
-        {
-            handles.UpdatePosition();
-        }
+        CompositeUpdate();
     }
 
-    public void Resize(int newWidth, int newHeight)
+    public void Resize(float newWidth, float newHeight)
     {
         Bounds = Bounds with { Size = new SKSize(newWidth, newHeight) };
+        CompositeUpdate();
+    }
+
+    public void SetBounds(SKRect bounds)
+    {
+        Bounds = bounds;
+        CompositeUpdate();
     }
 
     public void SetBackgroundColor(SKColor color)
@@ -78,18 +89,50 @@ public class Region : InteractiveElement
         Border = border;
     }
 
+    private void CompositeUpdate()
+    {
+        TextDocument.SetBounds(Bounds);
+        foreach (var handles in Children.OfType<DragHandle>())
+        {
+            handles.UpdatePosition();
+        }
+    }
+
     public override bool HitTest(SKPoint point)
     {
-        return Bounds.Contains(point);
+        if (Bounds.Contains(point) || Children.Any(x => x.HitTest(point)))
+        {
+            UpdateCursor(point);
+            return true;
+        }
+        
+        return false;
+    }
+
+    private void UpdateCursor(SKPoint point)
+    {
+        if (TextDocument.Bounds.Contains(point) && Focused && InteractionManager.Instace.InteractionMode == InteractionMode.TextFocus)
+        {
+            _cursorStyle = CursorStyle.Text;
+        }
+        else
+        {
+            _cursorStyle = CursorStyle.Move;
+        }
     }
 
     public override void Draw(SKCanvas canvas, EditorState editorState)
     {
-        TextDocument.Paint(canvas, Position.Y, Position.Y + TextDocument.Length, new TextPaintOptions
+        
+        TextDocument.Paint(
+            canvas,
+            Position.Y,
+            Position.Y + TextDocument.Length,
+            (editorState.ActiveRegion == this && InteractionManager.Instace.InteractionMode == InteractionMode.TextFocus) ? new TextPaintOptions
         {
             Selection = editorState.Selection,
             SelectionColor = SKColors.CornflowerBlue.WithAlpha(126)
-        });
+        } : null);
         
         if (Border.HasValue)
         {
@@ -106,7 +149,7 @@ public class Region : InteractiveElement
             {
                 IsStroke = true,
                 StrokeWidth = 1,
-                Color = SKColors.Gray
+                Color = SKColors.LightGray
             });
         }
 
@@ -118,5 +161,22 @@ public class Region : InteractiveElement
             }   
         }
     }
-    
+
+    public void OnDragStart(SKPoint start)
+    {
+        _originPosition = Position;
+    }
+
+    public void OnDragUpdate(SKPoint delta)
+    {
+        if (InteractionManager.Instace.InteractionMode == InteractionMode.Default && _originPosition.HasValue)
+        {
+            UpdatePosition(_originPosition.Value.X + delta.X, _originPosition.Value.Y + delta.Y);   
+        }
+    }
+
+    public void OnDragEnd()
+    {
+        _originPosition = null;
+    }
 }

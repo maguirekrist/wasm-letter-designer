@@ -1,5 +1,6 @@
 using SkiaSharp;
 using WASMApp.Application.Editor.Core;
+using WASMApp.Application.Render;
 
 namespace WASMApp.Application.Editor.Elements;
 
@@ -15,10 +16,27 @@ public class DragHandle : InteractiveElement, IDraggable
 {
 
     private readonly Region _parentRegion;
-    private readonly SKPaint _handlePaint = new() { Color = SKColors.Blue };
+    private readonly SKPaint _handlePaint = new() { Color = SKColors.White };
+    private readonly SKPaint _handleStroke = new() { Color = SKColors.Blue, StrokeWidth = 2, IsStroke = true,};
     private readonly DragHandlePosition _position;
-    private const float HandleSize = 8;
-    
+    private const float HANDLE_SIZE = 8;
+
+    private SKRect? _originalRegionBounds = null;
+
+    public override void OnClick(SKPoint point)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override CursorStyle CursorStyle => _position switch
+    {
+        DragHandlePosition.TopLeft => CursorStyle.ResizeNw,
+        DragHandlePosition.TopRight => CursorStyle.ResizeNe,
+        DragHandlePosition.BottomLeft => CursorStyle.ResizeSw,
+        DragHandlePosition.BottomRight => CursorStyle.ResizeSe,
+        _ => throw new ArgumentOutOfRangeException()
+    };
+
     public DragHandle(Region parent, DragHandlePosition position)
     {
         _parentRegion = parent;
@@ -31,14 +49,14 @@ public class DragHandle : InteractiveElement, IDraggable
         var parentBounds = _parentRegion.Bounds;
         Bounds = _position switch
         {
-            DragHandlePosition.TopLeft => SKRect.Create(parentBounds.Left - HandleSize / 2,
-                parentBounds.Top - HandleSize / 2, HandleSize, HandleSize),
-            DragHandlePosition.TopRight => SKRect.Create(parentBounds.Right - (HandleSize / 2),
-                parentBounds.Top - HandleSize / 2, HandleSize, HandleSize),
-            DragHandlePosition.BottomLeft => SKRect.Create(parentBounds.Left - HandleSize / 2,
-                parentBounds.Bottom - HandleSize / 2, HandleSize, HandleSize),
-            DragHandlePosition.BottomRight => SKRect.Create(parentBounds.Right - HandleSize / 2,
-                parentBounds.Bottom - HandleSize / 2, HandleSize, HandleSize),
+            DragHandlePosition.TopLeft => SKRect.Create(parentBounds.Left - HANDLE_SIZE / 2,
+                parentBounds.Top - HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE),
+            DragHandlePosition.TopRight => SKRect.Create(parentBounds.Right - (HANDLE_SIZE / 2),
+                parentBounds.Top - HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE),
+            DragHandlePosition.BottomLeft => SKRect.Create(parentBounds.Left - HANDLE_SIZE / 2,
+                parentBounds.Bottom - HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE),
+            DragHandlePosition.BottomRight => SKRect.Create(parentBounds.Right - HANDLE_SIZE / 2,
+                parentBounds.Bottom - HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE),
             _ => throw new ArgumentOutOfRangeException(nameof(_position), _position, null)
         };
     }
@@ -47,21 +65,52 @@ public class DragHandle : InteractiveElement, IDraggable
 
     public override void Draw(SKCanvas canvas, EditorState editorState)
     {
-        canvas.DrawCircle(Bounds.MidX, Bounds.MidY, HandleSize / 2, _handlePaint);
+        canvas.DrawCircle(Bounds.MidX, Bounds.MidY, HANDLE_SIZE / 2, _handlePaint);
+        canvas.DrawCircle(Bounds.MidX, Bounds.MidY, HANDLE_SIZE / 2, _handleStroke);
     }
 
     public void OnDragStart(SKPoint start)
     {
-        throw new NotImplementedException();
+        _originalRegionBounds = _parentRegion.Bounds;
     }
 
     public void OnDragUpdate(SKPoint delta)
     {
-        throw new NotImplementedException();
+        if (_originalRegionBounds.HasValue)
+        {
+            switch (_position)
+            {
+                case DragHandlePosition.BottomRight:
+                    _parentRegion.Resize(_originalRegionBounds.Value.Width + delta.X, _originalRegionBounds.Value.Height + delta.Y);
+                    break;
+                case DragHandlePosition.BottomLeft:
+                    _parentRegion.SetBounds(_originalRegionBounds.Value with
+                    {
+                        Left = _originalRegionBounds.Value.Left + delta.X, 
+                        Size = new SKSize(_originalRegionBounds.Value.Width - delta.X, _originalRegionBounds.Value.Height + delta.Y)
+                    });
+                    break;
+                case DragHandlePosition.TopLeft:
+                    _parentRegion.SetBounds(_originalRegionBounds.Value with
+                    {
+                        Left = _originalRegionBounds.Value.Left + delta.X, 
+                        Top = _originalRegionBounds.Value.Top + delta.Y,
+                        Size = new SKSize(_originalRegionBounds.Value.Width - delta.X, _originalRegionBounds.Value.Height - delta.Y)
+                    });
+                    break;
+                case DragHandlePosition.TopRight:
+                    _parentRegion.SetBounds(_originalRegionBounds.Value with
+                    {
+                        Top = _originalRegionBounds.Value.Top + delta.Y, 
+                        Size = new SKSize(_originalRegionBounds.Value.Width + delta.X, _originalRegionBounds.Value.Height - delta.Y)
+                    });
+                    break;
+            }
+        }
     }
 
     public void OnDragEnd()
     {
-        throw new NotImplementedException();
+        _originalRegionBounds = null;
     }
 }

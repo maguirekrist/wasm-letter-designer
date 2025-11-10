@@ -1,7 +1,7 @@
 using SkiaSharp;
 using Topten.RichTextKit;
 
-namespace WASMApp.Application.Design;
+namespace WASMApp.Application.Text;
 
 public abstract class DesignNode
 {

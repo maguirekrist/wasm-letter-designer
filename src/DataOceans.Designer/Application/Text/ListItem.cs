@@ -1,8 +1,9 @@
 using SkiaSharp;
 using Topten.RichTextKit;
 using Topten.RichTextKit.Editor;
+using WASMApp.Application.Design;
 
-namespace WASMApp.Application.Design;
+namespace WASMApp.Application.Text;
 
 public enum BulletType
 {
@@ -12,7 +13,7 @@ public enum BulletType
     Number
 }
 
-public class ListItem : DesignNode
+public class ListItem : Paragraph
 {
     public BulletType BulletType { get; set; }
     
@@ -20,23 +21,20 @@ public class ListItem : DesignNode
     {
         BulletType = bulletType;
         _textBlock = new TextBlock();
-        _textBlock.AddText("\u2029", style);
+        _textBlock.AddText("This is a test, help.", style);
     }
-    
-    public override void Layout(DesignNode owner)
+
+    public override void Layout(TextDocument owner)
     {
-        // _textBlock.RenderWidth =
-        //     owner.PageWidth
-        //     - owner.MarginLeft - owner.MarginRight
-        //     - this.MarginLeft - this.MarginRight;
-        //
-        // // For layout just need to set the appropriate layout width on the text block
-        // if (owner.LineWrap)
-        // {
-        //     _textBlock.MaxWidth = _textBlock.RenderWidth;
-        // }
-        // else
-        //     _textBlock.MaxWidth = null;
+        _textBlock.RenderWidth = owner.PageWidth - this.MarginLeft - this.MarginRight;
+        // owner.PageWidth
+        // - this.MarginLeft - this.MarginRight;
+        if (owner.LineWrap)
+        {
+            _textBlock.MaxWidth = _textBlock.RenderWidth;
+        }
+        else
+            _textBlock.MaxWidth = null;
     }
 
     public override void Paint(SKCanvas canvas, TextPaintOptions options)
@@ -60,7 +58,7 @@ public class ListItem : DesignNode
                 throw new NotImplementedException();
         }
 
-        _textBlock.Paint(canvas, new SKPoint(ContentXCoord + spacing, ContentYCoord), options);
+        _textBlock.Paint(canvas, new SKPoint(ContentXCoord + spacing, ContentYCoord - 5.0f), options);
     }
 
     /// <inheritdoc />

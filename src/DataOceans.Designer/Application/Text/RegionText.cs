@@ -1,9 +1,8 @@
 using SkiaSharp;
-using Topten.RichTextKit;
 using Topten.RichTextKit.Editor;
 using Topten.RichTextKit.Utils;
 
-namespace WASMApp.Application.Design;
+namespace WASMApp.Application.Text;
 
 public class RegionText
 {

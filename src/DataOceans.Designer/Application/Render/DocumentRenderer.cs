@@ -10,15 +10,24 @@ public class DocumentRenderer
 {
     public static void Render(SKCanvas canvas, EditorState editor)
     {
-        foreach (var region in editor.Document.Regions)
+        foreach (var element in editor.Elements)
         {
-            RenderRegion(canvas, region, editor);
+            element.Draw(canvas, editor);
         }
-
-
+        
         if (editor.ActiveRegion != null)
         {
-            RenderCaret(canvas, editor.Caret);   
+            canvas.DrawRect(editor.ActiveRegion.Bounds, new SKPaint
+            {
+                IsStroke = true,
+                StrokeWidth = 1.0f,
+                Color = SKColors.Blue
+            });
+
+            if (InteractionManager.Instace.InteractionMode == InteractionMode.TextFocus)
+            {
+                RenderCaret(canvas, editor.Caret);
+            }
         }
     }
 

@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using SkiaSharp;
 using Topten.RichTextKit;
-using WASMApp.Application.Design;
 using WASMApp.Application.Editor.Core;
 using WASMApp.Application.Editor.Elements;
 
@@ -11,26 +10,23 @@ public class EditorState
 {
     public Caret Caret { get; private set; }
     public TextRange Selection { get; set; }
-
+    
+    public IList<IInteractiveElement> Elements { get; } = new List<IInteractiveElement>();
     public ObservableCollection<IInteractiveElement> SelectedElements { get; } = new();
     
     public float Scale { get; set; } = 1.0f;
-    
-    private LetterDocument _document;
-
-    public LetterDocument Document => _document;
     public StyleManager StyleManager { get; init; }
     
     public Region? ActiveRegion { get; set; }
     
     public EditorState()
     {
-        _document = new LetterDocument();
         StyleManager = new StyleManager();
         Caret = new Caret();
         Selection = new TextRange(0, 10);
 
         AddRegion("test-region", 20, 20);
+        AddRegion("region_2", 20, 240);
     }
 
     public void MoveCaret(float x, float y)
@@ -80,7 +76,43 @@ public class EditorState
     {
         var newRegion = new Region(name);
         newRegion.UpdatePosition(x, y);
-        _document.AddRegion(newRegion);
+        Elements.Add(newRegion);
+    }
+
+    public IInteractiveElement? HitTest(SKPoint point)
+    {
+        foreach (var element in Elements)
+        {
+            var result = HitTestRecursive(element, point);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+
+        return null;
+    }
+
+    private IInteractiveElement? HitTestRecursive(IInteractiveElement element, SKPoint point)
+    {
+        if (element.HitTest(point))
+        {
+            if (element.Children != null)
+            {
+                foreach (var child in element.Children.Reverse())
+                {
+                    var childResult = HitTestRecursive(child, point);
+                    if (childResult != null)
+                    {
+                        return childResult;
+                    }
+                }
+            }
+
+            return element;
+        }
+
+        return null;
     }
     
 }
